@@ -501,24 +501,20 @@ pub(crate) mod cli {
                     };
 
                     if let Ok(kernel) = kernels {
-                        println!("Removing kernels: {}\nAre you sure?(Y/n)", kernel);
-                        match read_line()
-                            .with_context(|| anyhow!("Error while reading line"))?
-                            .as_str()
-                            .to_lowercase()
-                            .as_str()
-                        {
-                            "yes" | "y" => {
-                                let output = Command::new("sudo")
-                                    .args(["dnf", "remove", kernel.as_str()])
-                                    .stdout(Stdio::piped())
-                                    .spawn()?
-                                    .wait_with_output()
-                                    .with_context(|| "Failed to execute command")?;
+                        println!("Removing kernels: {}\nAre you sure? (Y/n)", kernel);
+                        let readline_confirm = &read_line().unwrap_or(String::from("n"));
+                        let readline_confirm = readline_confirm.trim().to_lowercase();
+                        if readline_confirm == "y" || readline_confirm == "yes" {
+                            let output = Command::new("sudo")
+                                .args(["dnf", "remove", kernel.as_str()])
+                                .stdout(Stdio::piped())
+                                .spawn()?
+                                .wait_with_output()
+                                .with_context(|| "Failed to execute command")?;
 
-                                io::stdout().write_all(&output.stdout)?;
-                            }
-                            _ => std::process::exit(1),
+                            io::stdout().write_all(&output.stdout)?;
+                        } else {
+                            std::process::exit(1)
                         }
                     }
                 }
