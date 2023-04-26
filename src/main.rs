@@ -1,7 +1,7 @@
 use anyhow::{anyhow, Context, Result};
 use clap::Parser;
 use std::env::consts::OS;
-use std::io::{self, Write};
+use std::io::{self, prelude::*, BufReader, Write};
 use std::process::Command;
 
 // #![deny(missing_docs)]
@@ -101,10 +101,13 @@ fn execute_cmd(cmd: &str, args: &[&str]) -> Result<String> {
     let cmd_str = format!("{cmd} {args}", cmd = cmd, args = args.join(" "));
     println!("Executing: {cmd_str}", cmd_str = cmd_str,);
 
-    let output = Command::new(cmd)
-        .args(args)
-        .output()
-        .with_context(|| format!("Failed to execute command: {cmd_str}", cmd_str = cmd_str))?;
+    let output = Command::new(cmd).args(args).output().with_context(|| {
+        anyhow!(format!(
+            "Failed to execute command: {cmd_str}",
+            cmd_str = cmd_str
+        ))
+    })?;
+    println!("{output:?}");
 
     if output.status.success() {
         let stdout = String::from_utf8_lossy(&output.stdout);
@@ -341,10 +344,11 @@ pub(crate) mod cli {
 
     use super::{execute_cmd, read_line};
     use anyhow::{anyhow, Context, Error, Result};
+    use arboard::Clipboard;
     use clap::{Parser, Subcommand};
     use dialoguer::{theme::ColorfulTheme, MultiSelect};
     use std::{
-        io::{self, Write},
+        io::{self, BufRead, BufReader, Write},
         process::{Command, Stdio},
     };
 
@@ -370,12 +374,16 @@ pub(crate) mod cli {
             // #[structopt(name = "PACKAGE_NAME", help = "Name of the package to remove")]
             package_name: String,
         },
+
         /// Cleans the package cache.
         CleanPackageCache,
+
         /// Uninstalls unused apps.
         UninstallUnusedApps,
+
         /// Removes old kernels.
         RemoveOldKernels,
+
         /// Cleans up log files.
         CleanUpLogFiles,
     }
@@ -501,21 +509,27 @@ pub(crate) mod cli {
                     };
 
                     if let Ok(kernel) = kernels {
-                        println!("Removing kernels: {}\nAre you sure? (Y/n)", kernel);
-                        let readline_confirm = &read_line().unwrap_or(String::from("n"));
-                        let readline_confirm = readline_confirm.trim().to_lowercase();
-                        if readline_confirm == "y" || readline_confirm == "yes" {
-                            let output = Command::new("sudo")
-                                .args(["dnf", "remove", kernel.as_str()])
-                                .stdout(Stdio::piped())
-                                .spawn()?
-                                .wait_with_output()
-                                .with_context(|| "Failed to execute command")?;
+                        println!("Copying command to remove kernels: {}", kernel);
 
-                            io::stdout().write_all(&output.stdout)?;
-                        } else {
-                            std::process::exit(1)
-                        }
+                        let mut args = vec!["sudo", "dnf", "remove"];
+                        args.push(kernel.as_str());
+                        let the_string = args.join(" ");
+
+                        let mut child = Command::new("sudo")
+                            .args(&["xsel", "-ib"])
+                            .stdin(Stdio::piped())
+                            .stdout(Stdio::piped())
+                            .spawn()
+                            .with_context(|| "Failed to execute command")?;
+
+                        let _copying = child
+                            .stdin
+                            .as_mut()
+                            .unwrap()
+                            .write_all(the_string.as_bytes());
+                        let output = child.wait_with_output()?;
+                        println!("{}", String::from_utf8(output.stdout).unwrap());
+                        // println!("Paste the command: \"{}\"", the_string);
                     }
                 }
                 Commands::CleanUpLogFiles => {
@@ -530,3 +544,31 @@ pub(crate) mod cli {
         }
     }
 }
+// clipboard.set_text(the_string.clone()).unwrap();
+// let readline_confirm = &read_line().unwrap_or(String::from("n"));
+// let readline_confirm = readline_confirm.trim().to_lowercase();
+// if readline_confirm == "y" || readline_confirm == "yes" {
+//     // execute_cmd("sudo", &["dnf", "remove", kernel.as_str()])?;
+//     let output_file = "/tmp/dnf_output.txt"; // path to output file.
+//     let output = Command::new("sudo")
+//         .args(["dnf", "remove", kernel.as_str()])
+//         .stdout(Stdio::piped())
+//         .stderr(Stdio::inherit())
+//         .spawn()?
+//         .wait_with_output()
+//         .with_context(|| "Failed to execute command")?; // let output = Command::new("sudo") .args(["dnf", "remove", kernel.as_str()]) .stdout(Stdio::piped()) .spawn()? .wait_with_output() .with_context(|| "Failed to execute command")?;
+//
+//     // Write the output to a file.
+//     let mut file = std::fs::File::create(output_file)?;
+//     file.write_all(&output.stdout)?;
+//
+//     // read and display the contents of the file to the user.
+//     let file = std::fs::File::open(output_file)?;
+//     let reader = BufReader::new(file);
+//     for line in reader.lines() {
+//         println!("{line}", line = line?);
+//     }
+//     // io::stdout().write_all(&output.stdout)?;
+// } else {
+//     std::process::exit(1)
+// }

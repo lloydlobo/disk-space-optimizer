@@ -7,5 +7,6 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1.0.70"
+arboard = "3.2.0"
 clap = { version = "4.2.4", features = ["derive"] }
 dialoguer = "0.10.4"
