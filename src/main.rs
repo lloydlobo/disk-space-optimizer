@@ -1,7 +1,7 @@
 use anyhow::{anyhow, Context, Result};
 use clap::Parser;
 use std::env::consts::OS;
-use std::io::{self, prelude::*, BufReader, Write};
+use std::io::{self, prelude::*};
 use std::process::Command;
 
 // #![deny(missing_docs)]
@@ -344,11 +344,11 @@ pub(crate) mod cli {
 
     use super::{execute_cmd, read_line};
     use anyhow::{anyhow, Context, Error, Result};
-    use arboard::Clipboard;
+
     use clap::{Parser, Subcommand};
     use dialoguer::{theme::ColorfulTheme, MultiSelect};
     use std::{
-        io::{self, BufRead, BufReader, Write},
+        io::{BufRead, Write},
         process::{Command, Stdio},
     };
 
