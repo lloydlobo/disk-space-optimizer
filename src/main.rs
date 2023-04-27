@@ -515,8 +515,8 @@ pub(crate) mod cli {
                         args.push(kernel.as_str());
                         let the_string = args.join(" ");
 
-                        let mut child = Command::new("sudo")
-                            .args(&["xsel", "-ib"])
+                        let mut child = Command::new("xsel")
+                            .args(&["-ib"])
                             .stdin(Stdio::piped())
                             .stdout(Stdio::piped())
                             .spawn()
@@ -529,7 +529,7 @@ pub(crate) mod cli {
                             .write_all(the_string.as_bytes());
                         let output = child.wait_with_output()?;
                         println!("{}", String::from_utf8(output.stdout).unwrap());
-                        // println!("Paste the command: \"{}\"", the_string);
+                        println!("Paste the command: \"{}\"", the_string);
                     }
                 }
                 Commands::CleanUpLogFiles => {
