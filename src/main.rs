@@ -200,63 +200,14 @@ fn read_file(filename: &str) -> io::Result<Vec<String>> {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-    use pretty_assertions::{assert_eq, assert_str_eq};
-    use std::{
-        fs::File,
-        io::{self, Write},
-    };
-    use tempfile::NamedTempFile;
-
-    #[test]
-    fn it_works() {
-        let result = 3 + 1;
-        assert_eq!(result, 4);
-    }
-
-    #[test]
-    fn test_tempfile_dependecy() -> io::Result<()> {
-        let mut input_file = NamedTempFile::new()?;
-        writeln!(input_file, "Hello, world!")?;
-
-        let got = input_file.path().to_str().unwrap();
-        assert_str_eq!(&got[0..=8], "/tmp/.tmp");
-
-        let mut file = File::open(got)?;
-        let mut output_file = NamedTempFile::new()?;
-        io::copy(&mut file, &mut output_file)?;
-
-        let _got = output_file.path().to_str().unwrap();
-        let mut output_file = File::open(output_file.path())?;
-        let mut buffer = String::new();
-        output_file.read_to_string(&mut buffer)?;
-        assert_eq!(buffer, "Hello, world!\n");
-
-        Ok(())
-    }
-
-    #[test]
-    fn test_execute_cmd() -> Result<()> {
-        let output = execute_cmd("echo", &["hello", "world"])?;
-        assert_eq!(output, "hello world");
-
-        let output = execute_cmd("git", &["status"])?;
-        assert!(output.len() > 0);
-        Ok(())
-    }
-
-    // NOTE: manual intervention required. Type `hello, world` for test to pass.
-    //
-    // #[test]
-    // fn test_read_line() -> io::Result<()> {
-    //     let mut input_file = NamedTempFile::new()?;
-    //     writeln!(input_file, "hello, world")?;
-    //     let mut saved_stdin = std::io::stdin();
-    //     let result = read_line()?;
-    //     Ok(())
-    // }
+use mockall::{automock, mock, predicate::*};
+#[cfg_attr(test, automock)]
+trait MyTrait {
+    fn foo(&self, x: u32) -> u32;
 }
+
+#[cfg(test)]
+mod tests;
 
 pub(crate) mod multidialogue {
     use std::{cmp, fmt};
