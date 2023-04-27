@@ -32,6 +32,34 @@ fn main() -> Result<()> {
 
 const ELLIPSIS: &str = "…";
 
+/// The `get_commands` function returns a `DiskSpaceOptimizerItems` object that contains a set of
+/// options for disk space optimization.
+///
+/// Each option is represented as a `SelectableItem`, which is a struct containing a numeric ID and
+/// a string label.
+///
+/// The available options are:
+///
+/// 1. "Remove unnecessary packages"
+/// 2. "Clean package cache"
+/// 3. "Uninstall unused applications"
+/// 4. "Remove old kernel versions"
+/// 5. "Clean up log files"
+/// 0. "Exit"
+///
+/// # Examples
+///
+/// ```
+/// use multidialogue::DiskSpaceOptimizerItems;
+///
+/// fn main() {
+///     let commands = get_commands();
+///
+///     for item in commands.items() {
+///         println!("{}. {}", item.id(), item.label());
+///     }
+/// }
+/// ```
 fn get_commands() -> multidialogue::DiskSpaceOptimizerItems<i32> {
     multidialogue::DiskSpaceOptimizerItems::new()
         .with_option(multidialogue::SelectableItem::new(
