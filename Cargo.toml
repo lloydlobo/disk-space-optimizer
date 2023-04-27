@@ -2,6 +2,10 @@
 name = "disk-space-optimizer"
 version = "0.1.0"
 edition = "2021"
+description = """
+A command-line interface tool for optimizing disk space.
+"""
+categories = ["command-line-interface"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -9,3 +13,14 @@ edition = "2021"
 anyhow = "1.0.70"
 clap = { version = "4.2.4", features = ["derive"] }
 dialoguer = "0.10.4"
+
+[profile.dev]
+panic = "abort"
+
+[profile.release]
+panic = "abort"
+opt-level = 3
+lto = true
+incremental = true
+codegen-units = 1
+debug = false      # production

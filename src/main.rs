@@ -10,7 +10,8 @@ fn main() -> Result<()> {
     let cli = cli::Cli::parse();
 
     let current_os = OS;
-    println!("Welcome to the {current_os} disk space optimizer CLI!",);
+    println!("Welcome to disk space optimizer CLI for {current_os}!",);
+
     match &cli.command {
         Some(command) => command.execute()?,
         _ => {
