@@ -1,11 +1,44 @@
+//! # Disk Space Optimizer CLI
+//!
+//! This is a command-line interface (CLI) for the disk space optimizer.
+//! It allows the user to perform disk space optimization operations, such as on a Linux system.
+//!
+//! # Usage
+//!
+//! The CLI is executed using the following command:
+//!
+//! ```bash
+//! cargo run --bin disk-space-optimizer
+//! ```
+
+#![deny(missing_docs)]
+
+#[cfg(test)]
+mod tests;
+
 use anyhow::{anyhow, Context, Result};
 use clap::Parser;
 use std::env::consts::OS;
 use std::io::{self, prelude::*};
 use std::process::Command;
 
-// #![deny(missing_docs)]
-
+/// The main function of the disk space optimizer CLI. Parses the command-line arguments using
+/// `Cli::parse()`, then displays the welcome message and presents a menu of options to the user.
+///
+/// If a command argument was passed in the command line, that command is executed. Otherwise, the
+/// user is presented with a menu of options to select from. The `run_dialoguer` function from the
+/// `multidialogue` crate is used to display the menu and capture the user's selections.
+///
+/// # Examples
+///
+/// ```
+/// use anyhow::Result;
+/// use disk_space_optimizer::main;
+///
+/// fn main() -> Result<()> {
+///     main()
+/// }
+/// ```
 fn main() -> Result<()> {
     let cli = cli::Cli::parse();
 
@@ -29,8 +62,6 @@ fn main() -> Result<()> {
     }
     Ok(())
 }
-
-const ELLIPSIS: &str = "…";
 
 /// The `get_commands` function returns a `DiskSpaceOptimizerItems` object that contains a set of
 /// options for disk space optimization.
@@ -190,6 +221,7 @@ fn read_line() -> Result<String> {
 ///
 /// This function will return an error if the file cannot be read.
 ///
+#[allow(dead_code)]
 fn read_file(filename: &str) -> io::Result<Vec<String>> {
     let file = std::fs::File::open(filename)?;
     let lines = io::BufReader::new(file)
@@ -198,16 +230,6 @@ fn read_file(filename: &str) -> io::Result<Vec<String>> {
 
     Ok(lines)
 }
-
-#[cfg(test)]
-use mockall::{automock, mock, predicate::*};
-#[cfg_attr(test, automock)]
-trait MyTrait {
-    fn foo(&self, x: u32) -> u32;
-}
-
-#[cfg(test)]
-mod tests;
 
 pub(crate) mod multidialogue {
     use std::{cmp, fmt};
@@ -372,6 +394,7 @@ pub(crate) mod multidialogue {
         }
 
         /// Adds the given list of options to the list of options.
+        #[allow(dead_code)]
         pub(crate) fn with_options(mut self, options: Vec<SelectableItem<T>>) -> Self {
             self.options = Some(options);
             self
@@ -407,9 +430,10 @@ pub(crate) mod cli {
     use clap::{Parser, Subcommand};
     use dialoguer::{theme::ColorfulTheme, MultiSelect};
     use std::{
-        io::{BufRead, Write},
+        io::Write,
         process::{Command, Stdio},
     };
+    // use std::io::BufRead;
 
     /// A command-line interface tool for optimizing disk space.
     #[derive(Parser, Debug)]

@@ -7,6 +7,13 @@ use std::{
 };
 use tempfile::NamedTempFile;
 
+#[cfg(test)]
+use mockall::{automock, predicate::*};
+#[cfg_attr(test, automock)]
+trait MyTrait {
+    fn foo(&self, x: u32) -> u32;
+}
+
 // trait Command { fn execute(&self) -> Result<()>; }
 // struct MockCommand;
 // impl Command for MockCommand {
