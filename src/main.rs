@@ -98,6 +98,7 @@ fn get_commands() -> multidialogue::DiskSpaceOptimizerItems<i32> {
 /// command fails. If you don't want to use this crate, you can replace the `Err(anyhow!(...))`
 /// line with a regular `Err(...)` line that returns a string error message. Additionally, you need
 /// to add the `anyhow` crate to your `Cargo.toml` file as a dependency.
+///
 fn execute_cmd(cmd: &str, args: &[&str]) -> Result<String> {
     let cmd_str = format!("{cmd} {args}", cmd = cmd, args = args.join(" "));
     println!("Executing: {cmd_str}", cmd_str = cmd_str,);
@@ -149,6 +150,84 @@ fn read_line() -> Result<String> {
         .with_context(|| "Failed to read input")?;
 
     Ok(buffer)
+}
+
+/// Reads a file and returns it as a `Vec<String>`.
+///
+/// # Arguments
+///
+/// * `filename` - The path to the file to read.
+///
+/// # Errors
+///
+/// This function will return an error if the file cannot be read.
+///
+fn read_file(filename: &str) -> io::Result<Vec<String>> {
+    let file = std::fs::File::open(filename)?;
+    let lines = io::BufReader::new(file)
+        .lines()
+        .collect::<io::Result<Vec<String>>>()?;
+
+    Ok(lines)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use pretty_assertions::{assert_eq, assert_str_eq};
+    use std::{
+        fs::File,
+        io::{self, Write},
+    };
+    use tempfile::NamedTempFile;
+
+    #[test]
+    fn it_works() {
+        let result = 3 + 1;
+        assert_eq!(result, 4);
+    }
+
+    #[test]
+    fn test_tempfile_dependecy() -> io::Result<()> {
+        let mut input_file = NamedTempFile::new()?;
+        writeln!(input_file, "Hello, world!")?;
+
+        let got = input_file.path().to_str().unwrap();
+        assert_str_eq!(&got[0..=8], "/tmp/.tmp");
+
+        let mut file = File::open(got)?;
+        let mut output_file = NamedTempFile::new()?;
+        io::copy(&mut file, &mut output_file)?;
+
+        let _got = output_file.path().to_str().unwrap();
+        let mut output_file = File::open(output_file.path())?;
+        let mut buffer = String::new();
+        output_file.read_to_string(&mut buffer)?;
+        assert_eq!(buffer, "Hello, world!\n");
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_execute_cmd() -> Result<()> {
+        let output = execute_cmd("echo", &["hello", "world"])?;
+        assert_eq!(output, "hello world");
+
+        let output = execute_cmd("git", &["status"])?;
+        assert!(output.len() > 0);
+        Ok(())
+    }
+
+    // NOTE: manual intervention required. Type `hello, world` for test to pass.
+    //
+    // #[test]
+    // fn test_read_line() -> io::Result<()> {
+    //     let mut input_file = NamedTempFile::new()?;
+    //     writeln!(input_file, "hello, world")?;
+    //     let mut saved_stdin = std::io::stdin();
+    //     let result = read_line()?;
+    //     Ok(())
+    // }
 }
 
 pub(crate) mod multidialogue {
@@ -545,6 +624,7 @@ pub(crate) mod cli {
         }
     }
 }
+
 // clipboard.set_text(the_string.clone()).unwrap();
 // let readline_confirm = &read_line().unwrap_or(String::from("n"));
 // let readline_confirm = readline_confirm.trim().to_lowercase();

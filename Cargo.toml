@@ -24,3 +24,16 @@ lto = true
 incremental = true
 codegen-units = 1
 debug = false      # production
+
+[dev-dependencies]
+pretty_assertions = "1.3.0"
+tempfile = "3.5.0"
+
+# debug = true # development perf & flamegraph
+
+# cargo build --release
+# perf record -g --call-graph dwarf target/release/your-program
+# perf report
+
+# You can use cargo flamegraph to build and profile a Rust project by specifying the --build and --profile options. For example:
+# cargo flamegraph --build --profile=release --bin <binary_name>
