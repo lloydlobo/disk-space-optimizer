@@ -1,5 +1,17 @@
 {
   "lldb.showDisassembly": "auto",
   "lldb.dereferencePointers": true,
-  "lldb.consoleMode": "commands"
+  "lldb.consoleMode": "commands",
+  "editor.tokenColorCustomizations": {
+    "comments": "",
+    "textMateRules": [
+      {
+        "scope": "comment",
+        "settings": {
+          "fontStyle": "italic",
+          "foreground": "#FFFFFF70"
+        }
+      }
+    ]
+  }
 }
