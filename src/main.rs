@@ -18,9 +18,11 @@ mod tests;
 
 use anyhow::{anyhow, Context, Result};
 use clap::Parser;
+use indicatif::{ProgressBar, ProgressStyle};
 use std::env::consts::OS;
 use std::io::{self, prelude::*};
 use std::process::Command;
+use std::time::Duration;
 
 /// The main function of the disk space optimizer CLI. Parses the command-line arguments using
 /// `Cli::parse()`, then displays the welcome message and presents a menu of options to the user.
@@ -40,22 +42,65 @@ use std::process::Command;
 /// }
 /// ```
 fn main() -> Result<()> {
+    
     let cli = cli::Cli::parse();
 
     let current_os = OS;
     println!("Welcome to disk space optimizer CLI for {current_os}!",);
 
     match &cli.command {
-        Some(command) => command.execute()?,
+        Some(command) => {
+            let pb = ProgressBar::new_spinner();
+            pb.set_style(ProgressStyle::default_spinner());
+            // command.execute()?
+            command.execute().map(|()| {
+                pb.finish_with_message("Done!");
+                
+            })?;
+        }
         _ => {
             let commands = get_commands();
             let selections = multidialogue::run_dialoguer(&commands)?;
 
             for selection in selections.into_iter() {
                 if let Some(command) = cli::Commands::from_selection(selection.key as usize) {
-                    if let Err(err) = command.execute() {
-                        println!("Error: {err}", err = anyhow!(err));
-                    }
+                    // Reference:
+                    // https://github.com/console-rs/indicatif/blob/main/examples/long-spinner.rs
+                    let pb = ProgressBar::new_spinner();
+                    pb.enable_steady_tick(Duration::from_millis(120));
+                    pb.set_style(
+                        ProgressStyle::with_template("{spinner:.blue} {msg}")
+                            .unwrap()
+                            // For more spinners check out the cli-spinners project:
+                            // https://github.com/sindresorhus/cli-spinners/blob/master/spinners.json
+                            .tick_strings(&[
+                                "▹▹▹▹▹",
+                                "▸▹▹▹▹",
+                                "▹▸▹▹▹",
+                                "▹▹▸▹▹",
+                                "▹▹▹▸▹",
+                                "▹▹▹▹▸",
+                                "▪▪▪▪▪",
+                            ]),
+                    );
+                    pb.set_message("Running command...");
+
+                    // command.execute().and_then(|()| {
+                    //     pb.finish_with_message("Done!");
+                    //     Ok(())
+                    // })?;
+                    command.execute()?;
+                    pb.finish_with_message("Done!");
+
+                    // match execute {
+                    //     Err(err) => {
+                    //         println!("Error: {err}", err = anyhow!(err));
+                    //     }
+                    //     _ => {
+                    //         pb.set_position(100);
+                    //         pb.finish();
+                    //     }
+                    // }
                 }
             }
         }
