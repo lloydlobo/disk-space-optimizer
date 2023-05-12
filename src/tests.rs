@@ -14,12 +14,6 @@ trait MyTrait {
     fn foo(&self, x: u32) -> u32;
 }
 
-// trait Command { fn execute(&self) -> Result<()>; }
-// struct MockCommand;
-// impl Command for MockCommand {
-//     fn execute(&self) -> Result<()> { println!("Mock command executed"); Ok(()) }
-// }
-
 fn main_with_cli(cli: cli::Cli) -> Result<()> {
     let current_os = OS;
     println!("Welcome to disk space optimizer CLI for {current_os}!",);
@@ -90,7 +84,7 @@ fn test_execute_cmd() -> Result<()> {
     assert_eq!(output, "hello world");
 
     let output = execute_cmd("git", &["status"])?;
-    assert!(output.len() > 0);
+    assert!(!output.is_empty());
     Ok(())
 }
 

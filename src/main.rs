@@ -588,8 +588,9 @@ pub(crate) mod cli {
                     println!("Available: {}", String::from_utf8_lossy(&output.stdout));
 
                     let kernels = String::from_utf8_lossy(&output.stdout).into_owned();
-                    let kernels: Vec<&str> =
+                    let mut kernels: Vec<&str> =
                         kernels.as_str().trim().split('\n').collect::<Vec<_>>();
+                    kernels.push("None");
 
                     let selected_kernels: Vec<usize> =
                         MultiSelect::with_theme(&ColorfulTheme::default())
@@ -605,6 +606,8 @@ pub(crate) mod cli {
                     let kernels = if selected_kernels.is_empty() {
                         println!("No kernels selected. Please try again.");
                         Err(anyhow!("No kernels were selected")) // std::process::exit(1);
+                    } else if selected_kernels.contains(&"None") {
+                        Err(anyhow!("No kernels were selected")) // std::process::exit(1);
                     } else {
                         Ok(selected_kernels.as_slice().join(" "))
                     };
@@ -617,7 +620,7 @@ pub(crate) mod cli {
                         let the_string = args.join(" ");
 
                         let mut child = Command::new("xsel")
-                            .args(&["-ib"])
+                            .args(["-ib"])
                             .stdin(Stdio::piped())
                             .stdout(Stdio::piped())
                             .spawn()
