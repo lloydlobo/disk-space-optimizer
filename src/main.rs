@@ -1,4 +1,4 @@
-//! # Disk Space Optimizer CLI
+//! # Disk Space Optimizer
 //!
 //! This is a command-line interface (CLI) for the disk space optimizer.
 //! It allows the user to perform disk space optimization operations, such as on a Linux system.
@@ -16,11 +16,14 @@
 #[cfg(test)]
 mod tests;
 
+use std::{
+    env::consts::OS,
+    io::{self, prelude::*},
+    process::Command,
+};
+
 use anyhow::{anyhow, Context, Result};
 use clap::Parser;
-use std::env::consts::OS;
-use std::io::{self, prelude::*};
-use std::process::Command;
 
 /// The main function of the disk space optimizer CLI. Parses the command-line arguments using
 /// `Cli::parse()`, then displays the welcome message and presents a menu of options to the user.
@@ -35,7 +38,7 @@ use std::process::Command;
 /// use anyhow::Result;
 /// use disk_space_optimizer::main;
 ///
-/// fn main() -> Result<()> {
+/// fn run() -> Result<()> {
 ///     main()
 /// }
 /// ```
@@ -97,19 +100,10 @@ fn main() -> Result<()> {
 /// ```
 fn get_commands() -> multidialogue::DiskSpaceOptimizerItems<i32> {
     multidialogue::DiskSpaceOptimizerItems::new()
-        .with_option(multidialogue::SelectableItem::new(
-            1,
-            "Remove unnecessary packages",
-        ))
+        .with_option(multidialogue::SelectableItem::new(1, "Remove unnecessary packages"))
         .with_option(multidialogue::SelectableItem::new(2, "Clean package cache"))
-        .with_option(multidialogue::SelectableItem::new(
-            3,
-            "Uninstall unused applications",
-        ))
-        .with_option(multidialogue::SelectableItem::new(
-            4,
-            "Remove old kernel versions",
-        ))
+        .with_option(multidialogue::SelectableItem::new(3, "Uninstall unused applications"))
+        .with_option(multidialogue::SelectableItem::new(4, "Remove old kernel versions"))
         .with_option(multidialogue::SelectableItem::new(5, "Clean up log files"))
         .with_option(multidialogue::SelectableItem::new(0, "Exit"))
 }
@@ -123,6 +117,7 @@ fn get_commands() -> multidialogue::DiskSpaceOptimizerItems<i32> {
 ///
 /// ```
 /// use std::process::Command;
+///
 /// use anyhow::{Context, Result};
 ///
 /// fn execute_cmd(cmd: &str, args: &[&str]) -> Result<String> {
@@ -140,11 +135,7 @@ fn get_commands() -> multidialogue::DiskSpaceOptimizerItems<i32> {
 ///         Ok(stdout.trim().to_string())
 ///     } else {
 ///         let stderr = String::from_utf8_lossy(&output.stderr);
-///         Err(anyhow!(
-///             "Command failed with exit code {}: {}",
-///             output.status,
-///             stderr.trim()
-///         ))
+///         Err(anyhow!("Command failed with exit code {}: {}", output.status, stderr.trim()))
 ///     }
 /// }
 ///
@@ -161,17 +152,14 @@ fn get_commands() -> multidialogue::DiskSpaceOptimizerItems<i32> {
 /// command fails. If you don't want to use this crate, you can replace the `Err(anyhow!(...))`
 /// line with a regular `Err(...)` line that returns a string error message. Additionally, you need
 /// to add the `anyhow` crate to your `Cargo.toml` file as a dependency.
-///
 fn execute_cmd(cmd: &str, args: &[&str]) -> Result<String> {
     let cmd_str = format!("{cmd} {args}", cmd = cmd, args = args.join(" "));
     println!("Executing: {cmd_str}", cmd_str = cmd_str,);
 
-    let output = Command::new(cmd).args(args).output().with_context(|| {
-        anyhow!(format!(
-            "Failed to execute command: {cmd_str}",
-            cmd_str = cmd_str
-        ))
-    })?;
+    let output = Command::new(cmd)
+        .args(args)
+        .output()
+        .with_context(|| anyhow!(format!("Failed to execute command: {cmd_str}", cmd_str = cmd_str)))?;
     println!("{output:?}");
 
     if output.status.success() {
@@ -180,11 +168,7 @@ fn execute_cmd(cmd: &str, args: &[&str]) -> Result<String> {
         Ok(stdout.trim().to_string())
     } else {
         let stderr = String::from_utf8_lossy(&output.stderr);
-        Err(anyhow!(
-            "Command failed with exit code {}: {}",
-            output.status,
-            stderr.trim()
-        ))
+        Err(anyhow!("Command failed with exit code {}: {}", output.status, stderr.trim()))
     }
 }
 
@@ -199,7 +183,7 @@ fn execute_cmd(cmd: &str, args: &[&str]) -> Result<String> {
 /// ```
 /// use std::io;
 ///
-/// fn main() -> io::Result<()> {
+/// fn run() -> io::Result<()> {
 ///     let input = read_line()?;
 ///     println!("You entered: {}", input);
 ///     Ok(())
@@ -208,9 +192,7 @@ fn execute_cmd(cmd: &str, args: &[&str]) -> Result<String> {
 fn read_line() -> Result<String> {
     let mut buffer = String::new();
     io::stdout().flush().context("Failed to flush stdout")?;
-    io::stdin()
-        .read_line(&mut buffer)
-        .with_context(|| "Failed to read input")?;
+    io::stdin().read_line(&mut buffer).with_context(|| "Failed to read input")?;
 
     Ok(buffer)
 }
@@ -224,13 +206,10 @@ fn read_line() -> Result<String> {
 /// # Errors
 ///
 /// This function will return an error if the file cannot be read.
-///
 #[allow(dead_code)]
 fn read_file(filename: &str) -> io::Result<Vec<String>> {
     let file = std::fs::File::open(filename)?;
-    let lines = io::BufReader::new(file)
-        .lines()
-        .collect::<io::Result<Vec<String>>>()?;
+    let lines = io::BufReader::new(file).lines().collect::<io::Result<Vec<String>>>()?;
 
     Ok(lines)
 }
@@ -249,7 +228,8 @@ pub(crate) mod multidialogue {
     use anyhow::{Error, Result};
     use dialoguer::{theme::ColorfulTheme, MultiSelect};
 
-    /// Runs the dialoguer prompt for selecting one or more options from the list of selectable items.
+    /// Runs the dialoguer prompt for selecting one or more options from the list of selectable
+    /// items.
     ///
     /// # Arguments
     ///
@@ -263,10 +243,7 @@ pub(crate) mod multidialogue {
     /// # Errors
     ///
     /// Returns an `Error` if there is an issue with the prompt interaction.
-    ///
-    pub(crate) fn run_dialoguer<T>(
-        items: &DiskSpaceOptimizerItems<T>,
-    ) -> Result<Vec<&SelectableItem<T>>>
+    pub(crate) fn run_dialoguer<T>(items: &DiskSpaceOptimizerItems<T>) -> Result<Vec<&SelectableItem<T>>>
     where
         T: fmt::Display + fmt::Debug + cmp::PartialEq<i32> + cmp::Eq + Copy,
     {
@@ -290,10 +267,8 @@ pub(crate) mod multidialogue {
             .interact()?;
 
         // Return the selected items.
-        let selections: Vec<&SelectableItem<T>> = selections
-            .into_iter()
-            .map(|i| (&items.options.as_ref().unwrap().as_slice()[i]))
-            .collect();
+        let selections: Vec<&SelectableItem<T>> =
+            selections.into_iter().map(|i| (&items.options.as_ref().unwrap().as_slice()[i])).collect();
 
         Ok(selections)
     }
@@ -306,15 +281,13 @@ pub(crate) mod multidialogue {
     ///
     /// # Returns
     ///
-    /// Returns a `Result` containing a vector of formatted strings representing the selectable items.
+    /// Returns a `Result` containing a vector of formatted strings representing the selectable
+    /// items.
     ///
     /// # Errors
     ///
     /// Returns an `Error` if there is an issue with formatting the prompt items.
-    ///
-    pub(crate) fn format_prompt_item<T>(
-        items: &DiskSpaceOptimizerItems<T>,
-    ) -> Result<Vec<String>, Error>
+    pub(crate) fn format_prompt_item<T>(items: &DiskSpaceOptimizerItems<T>) -> Result<Vec<String>, Error>
     where
         T: fmt::Display,
     {
@@ -323,17 +296,15 @@ pub(crate) mod multidialogue {
             .as_ref()
             .unwrap_or(&vec![])
             .iter()
-            .map(|item: &SelectableItem<T>| {
-                format!("{key}: {text}", key = item.key, text = &item.text[..])
-            })
+            .map(|item: &SelectableItem<T>| format!("{key}: {text}", key = item.key, text = &item.text[..]))
             .collect();
 
         Ok(res)
     }
 
-    /// Represents a selectable item in the disk space optimizer. It contains a key of type `T` and a
-    /// text description. It can be cloned if the key type implements `Clone`, and can be created using
-    /// `SelectableItem::new`.
+    /// Represents a selectable item in the disk space optimizer. It contains a key of type `T` and
+    /// a text description. It can be cloned if the key type implements `Clone`, and can be
+    /// created using `SelectableItem::new`.
     #[derive(Debug)]
     pub(crate) struct SelectableItem<T> {
         pub(crate) key: T,
@@ -342,20 +313,14 @@ pub(crate) mod multidialogue {
 
     impl<T: Clone> Clone for SelectableItem<T> {
         fn clone(&self) -> Self {
-            SelectableItem {
-                key: self.key.clone(),
-                text: self.text.clone(),
-            }
+            SelectableItem { key: self.key.clone(), text: self.text.clone() }
         }
     }
 
     impl<T: ToString> SelectableItem<T> {
         /// Creates a new `SelectableItem` with the given key and text.
         pub(crate) fn new(key: T, text: &str) -> Self {
-            Self {
-                key,
-                text: text.to_string(),
-            }
+            Self { key, text: text.to_string() }
         }
     }
 
@@ -364,7 +329,6 @@ pub(crate) mod multidialogue {
     /// It can be iterated over using a for loop, and can be created using
     /// `DiskSpaceOptimizerItems::new`, and then adding options using
     /// `DiskSpaceOptimizerItems::with_option` or `DiskSpaceOptimizerItems::with_options`.
-    ///
     #[derive(Clone)]
     pub(crate) struct DiskSpaceOptimizerItems<T> {
         pub(crate) options: Option<Vec<SelectableItem<T>>>,
@@ -442,24 +406,22 @@ pub(crate) mod cli {
     //! Overall, this module provides a flexible and extensible framework for building a disk space
     //! optimizer tool with a CLI interface.
 
-    use super::{execute_cmd, read_line};
-    use anyhow::{anyhow, Context, Error, Result};
-
-    use clap::{Parser, Subcommand};
-    use dialoguer::{theme::ColorfulTheme, MultiSelect};
     use std::{
         io::Write,
         process::{Command, Stdio},
     };
+
+    use anyhow::{anyhow, Context, Error, Result};
+    use clap::{Parser, Subcommand};
+    use dialoguer::{theme::ColorfulTheme, MultiSelect};
+
+    use super::{execute_cmd, read_line};
     // use std::io::BufRead;
 
     /// A command-line interface tool for optimizing disk space.
     #[derive(Parser, Debug)]
     #[command(author,version,about,long_about=None)]
-    #[clap(
-        name = "Disk Space Optimizer",
-        about = "A CLI tool for optimizing disk space"
-    )]
+    #[clap(name = "Disk Space Optimizer", about = "A CLI tool for optimizing disk space")]
     pub(crate) struct Cli {
         #[command(subcommand)]
         pub(crate) command: Option<Commands>,
@@ -512,29 +474,27 @@ pub(crate) mod cli {
         /// match command {
         ///     Some(Commands::RemovePackage { package_name }) => {
         ///         println!("Removing package: {}", package_name);
-        ///     },
+        ///     }
         ///     Some(Commands::CleanPackageCache) => {
         ///         println!("Cleaning package cache...");
-        ///     },
+        ///     }
         ///     Some(Commands::UninstallUnusedApps) => {
         ///         println!("Uninstalling unused apps...");
-        ///     },
+        ///     }
         ///     Some(Commands::RemoveOldKernels) => {
         ///         println!("Removing old kernels...");
-        ///     },
+        ///     }
         ///     Some(Commands::CleanUpLogFiles) => {
         ///         println!("Cleaning up log files...");
-        ///     },
+        ///     }
         ///     None => {
         ///         println!("Invalid selection.");
-        ///     },
+        ///     }
         /// }
         /// ```
         pub(crate) fn from_selection(selection: usize) -> Option<Self> {
             match selection {
-                1 => Some(Commands::RemovePackage {
-                    package_name: String::new(),
-                }),
+                1 => Some(Commands::RemovePackage { package_name: String::new() }),
                 2 => Some(Commands::CleanPackageCache),
                 3 => Some(Commands::UninstallUnusedApps),
                 4 => Some(Commands::RemoveOldKernels),
@@ -565,7 +525,93 @@ pub(crate) mod cli {
             match self {
                 Commands::RemovePackage { package_name } => {
                     if package_name.is_empty() {
-                        execute_cmd("sudo", &["dnf", "remove", package_name.trim()])?;
+                        println!("Select packages to remove (comma-separated), or type 'q' to quit:");
+                        let output = Command::new("dnf")
+                            .arg("list")
+                            .arg("--installed")
+                            .output()
+                            .with_context(|| "Failed to execute command")?;
+                        let lhs_to_pipe = String::from_utf8_lossy(&output.stdout);
+                        let mut child = Command::new("awk")
+                            .args(["{print $1}"]) // '{print $1}' tells awk to print the first column (in this case, the
+                            // package names).
+                            .stdin(Stdio::piped())
+                            .stdout(Stdio::piped())
+                            .spawn()
+                            .with_context(|| "Failed to execute command")?;
+                        let _copying = child.stdin.as_mut().unwrap().write_all(lhs_to_pipe.as_bytes());
+                        let output = child.wait_with_output()?;
+                        let pkgs_installed = String::from_utf8_lossy(&output.stdout).into_owned();
+
+                        println!("Available packages: ");
+                        println!("{}", pkgs_installed);
+                        let mut pkgs_installed: Vec<&str> =
+                            pkgs_installed.as_str().trim().split('\n').collect::<Vec<_>>();
+                        pkgs_installed.push("None");
+                        let pkgs_selected: Vec<usize> = MultiSelect::with_theme(&ColorfulTheme::default())
+                            .with_prompt("Select installed packages to remove:")
+                            .items(pkgs_installed.as_slice())
+                            .interact()?;
+
+                        let pkgs_selected: Vec<&str> =
+                            pkgs_selected.into_iter().map(|value: usize| pkgs_installed[value]).collect();
+                        let pkgs = if pkgs_selected.is_empty() {
+                            println!("No packages selected. Please try again.");
+                            Err(anyhow!("No packages were selected"))
+                        } else if pkgs_selected.contains(&"None") {
+                            Err(anyhow!("No packages were selected"))
+                        } else {
+                            Ok(pkgs_selected) // Ok(pkgs_selected.as_slice().join(" "))
+                        };
+
+                        if let Ok(pkgs) = pkgs {
+                            println!("These packages will be removed:");
+                            println!("{:?}", pkgs);
+                            let n_pkgs = pkgs.len();
+                            println!("Proceed to delete a total of {} package(s): (y/N)", n_pkgs);
+
+                            let mut resp = String::new();
+                            std::io::stdin().read_line(&mut resp)?;
+
+                            if resp.trim() != "y" && resp.trim() != "n" {
+                                return Err(anyhow!("Invalid response. Type either 'y' or 'n"));
+                            }
+                            if !(resp.trim() == "y") {
+                                return Err(anyhow!("Aborted deleting selected packages."));
+                            }
+
+                            println!("Preparing command to remove each of the selected packages");
+
+                            for pkg in &pkgs {
+                                let cmd = "sudo";
+                                let args = ["dnf", "remove", pkg];
+                                let cmd_str = format!("{cmd} {args}", cmd = cmd, args = args.join(" "));
+                                println!("Executing: {cmd_str}", cmd_str = cmd_str,);
+
+                                let output = Command::new("sudo")
+                                    .args(["dnf", "info", pkg.trim()])
+                                    .output()
+                                    .with_context(|| {
+                                        anyhow!(format!(
+                                            "Failed to execute command for package: {package}",
+                                            package = pkg
+                                        ))
+                                    })?;
+
+                                if output.status.success() {
+                                    let stdout = String::from_utf8_lossy(&output.stdout);
+                                    println!("Command output:\n{}", stdout);
+                                } else {
+                                    let stderr = String::from_utf8_lossy(&output.stderr);
+                                    println!("Command output:\n{}", stderr);
+
+                                    // Uncomment the line below if you want to return an error when
+                                    // the command fails. return
+                                    // Err(anyhow!( "Command failed with exit code {}: {}",
+                                    // output.status, stderr.trim()));
+                                }
+                            }
+                        }
                     } else {
                         println!("Enter package name to remove:");
                         let package_name = read_line()?;
@@ -588,20 +634,16 @@ pub(crate) mod cli {
                     println!("Available: {}", String::from_utf8_lossy(&output.stdout));
 
                     let kernels = String::from_utf8_lossy(&output.stdout).into_owned();
-                    let mut kernels: Vec<&str> =
-                        kernels.as_str().trim().split('\n').collect::<Vec<_>>();
+                    let mut kernels: Vec<&str> = kernels.as_str().trim().split('\n').collect::<Vec<_>>();
                     kernels.push("None");
 
-                    let selected_kernels: Vec<usize> =
-                        MultiSelect::with_theme(&ColorfulTheme::default())
-                            .with_prompt("Enter kernel versions to remove:")
-                            .items(kernels.as_slice())
-                            .interact()?;
+                    let selected_kernels: Vec<usize> = MultiSelect::with_theme(&ColorfulTheme::default())
+                        .with_prompt("Enter kernel versions to remove:")
+                        .items(kernels.as_slice())
+                        .interact()?;
 
-                    let selected_kernels: Vec<&str> = selected_kernels
-                        .into_iter()
-                        .map(|value: usize| kernels[value])
-                        .collect();
+                    let selected_kernels: Vec<&str> =
+                        selected_kernels.into_iter().map(|value: usize| kernels[value]).collect();
 
                     let kernels = if selected_kernels.is_empty() {
                         println!("No kernels selected. Please try again.");
@@ -626,11 +668,7 @@ pub(crate) mod cli {
                             .spawn()
                             .with_context(|| "Failed to execute command")?;
 
-                        let _copying = child
-                            .stdin
-                            .as_mut()
-                            .unwrap()
-                            .write_all(the_string.as_bytes());
+                        let _copying = child.stdin.as_mut().unwrap().write_all(the_string.as_bytes());
                         let output = child.wait_with_output()?;
                         println!("{}", String::from_utf8(output.stdout).unwrap());
                         println!("Paste the command: \"{}\"", the_string);
@@ -643,7 +681,6 @@ pub(crate) mod cli {
                     execute_cmd("sudo", &["journalctl", vacuum_time.as_str()])?;
                 }
             }
-
             Ok(())
         }
     }
@@ -652,32 +689,3 @@ pub(crate) mod cli {
 //////////////////////////////////////////////////////////////////////////////////////////////////
 // REGION_END: mod cli
 //////////////////////////////////////////////////////////////////////////////////////////////////
-
-// clipboard.set_text(the_string.clone()).unwrap();
-// let readline_confirm = &read_line().unwrap_or(String::from("n"));
-// let readline_confirm = readline_confirm.trim().to_lowercase();
-// if readline_confirm == "y" || readline_confirm == "yes" {
-//     // execute_cmd("sudo", &["dnf", "remove", kernel.as_str()])?;
-//     let output_file = "/tmp/dnf_output.txt"; // path to output file.
-//     let output = Command::new("sudo")
-//         .args(["dnf", "remove", kernel.as_str()])
-//         .stdout(Stdio::piped())
-//         .stderr(Stdio::inherit())
-//         .spawn()?
-//         .wait_with_output()
-//         .with_context(|| "Failed to execute command")?; // let output = Command::new("sudo") .args(["dnf", "remove", kernel.as_str()]) .stdout(Stdio::piped()) .spawn()? .wait_with_output() .with_context(|| "Failed to execute command")?;
-//
-//     // Write the output to a file.
-//     let mut file = std::fs::File::create(output_file)?;
-//     file.write_all(&output.stdout)?;
-//
-//     // read and display the contents of the file to the user.
-//     let file = std::fs::File::open(output_file)?;
-//     let reader = BufReader::new(file);
-//     for line in reader.lines() {
-//         println!("{line}", line = line?);
-//     }
-//     // io::stdout().write_all(&output.stdout)?;
-// } else {
-//     std::process::exit(1)
-// }

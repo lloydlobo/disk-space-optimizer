@@ -1,14 +1,15 @@
-use super::*;
-use anyhow::Result;
-use pretty_assertions::{assert_eq, assert_str_eq};
 use std::{
     fs::File,
     io::{self, Write},
 };
-use tempfile::NamedTempFile;
 
+use anyhow::Result;
 #[cfg(test)]
 use mockall::{automock, predicate::*};
+use pretty_assertions::{assert_eq, assert_str_eq};
+use tempfile::NamedTempFile;
+
+use super::*;
 #[cfg_attr(test, automock)]
 trait MyTrait {
     fn foo(&self, x: u32) -> u32;
